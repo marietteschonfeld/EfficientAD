@@ -40,6 +40,8 @@ imagenet_train_path = '../imagenette2/train'
 seed = 42
 on_gpu = True
 
+device = torch.device('cuda:1')
+
 # constants
 out_channels = 384
 grayscale_transform = transforms.RandomGrayscale(0.1)  # apply same to both
