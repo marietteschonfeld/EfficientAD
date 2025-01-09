@@ -43,7 +43,7 @@ on_gpu = True
 device = torch.device('cuda')
 
 # constants
-out_channels = 448
+out_channels = 384
 grayscale_transform = transforms.RandomGrayscale(0.1)  # apply same to both
 extractor_transform = transforms.Compose([
     transforms.Resize((512, 512)),
@@ -74,7 +74,7 @@ def main():
         backbone = torchvision.models.resnet18(weights=ResNet18_Weights.DEFAULT)
 
         extractor = FeatureExtractor(backbone=backbone,
-                                 layers_to_extract_from=['layer1', 'layer2', 'layer3'],
+                                 layers_to_extract_from=['layer2', 'layer3'],
                                  device=device,
                                  input_shape=(3, 512, 512))
     else:
