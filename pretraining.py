@@ -40,7 +40,7 @@ imagenet_train_path = '../imagenette2/train'
 seed = 42
 on_gpu = True
 
-device = torch.device('cuda:1')
+device = torch.device('cuda')
 
 # constants
 out_channels = 384
