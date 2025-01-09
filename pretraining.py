@@ -23,7 +23,15 @@ def get_argparse():
         epilog='Text at the bottom of help')
     parser.add_argument('-o', '--output_folder',
                         default='output/pretraining/1/')
-    return parser.parse_args()
+    parser.add_argument("--gpu_type", default="mps")
+    parser.add_argument("--gpu_number", default=0)
+
+    args = parser.parse_args()
+
+    if args.gpu_type != "mps":
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_number)
+    return args
 
 # variables
 model_size = 'mini'
@@ -31,7 +39,6 @@ model_size = 'mini'
 imagenet_train_path = '../imagenette2/train'
 seed = 42
 on_gpu = True
-device = torch.device('cuda:1')
 
 # constants
 out_channels = 384
@@ -57,8 +64,9 @@ def main():
     random.seed(seed)
 
     config = get_argparse()
+    device = torch.device('cuda')
 
-    # os.makedirs(config.output_folder)
+    os.makedirs(config.output_folder)
 
     if model_size == 'mini':
         backbone = torchvision.models.resnet18(weights=ResNet18_Weights.DEFAULT)
