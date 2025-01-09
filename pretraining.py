@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.models import Wide_ResNet101_2_Weights
+from torchvision.models import Wide_ResNet101_2_Weights, ResNet18_Weights
 from tqdm import tqdm
 from common import (get_pdn_small, get_pdn_medium,
                     ImageFolderWithoutTarget, InfiniteDataloader)
@@ -26,11 +26,12 @@ def get_argparse():
     return parser.parse_args()
 
 # variables
-model_size = 'small'
-imagenet_train_path = './ILSVRC/Data/CLS-LOC/train'
+model_size = 'mini'
+# imagenet_train_path = './ILSVRC/Data/CLS-LOC/train'
+imagenet_train_path = '../imagenette2/train'
 seed = 42
-on_gpu = torch.cuda.is_available()
-device = 'cuda' if on_gpu else 'cpu'
+on_gpu = True
+device = torch.device('cuda:0')
 
 # constants
 out_channels = 384
@@ -57,17 +58,24 @@ def main():
 
     config = get_argparse()
 
-    os.makedirs(config.output_folder)
+    # os.makedirs(config.output_folder)
 
-    backbone = torchvision.models.wide_resnet101_2(
-        weights=Wide_ResNet101_2_Weights.IMAGENET1K_V1)
+    if model_size == 'mini':
+        backbone = torchvision.models.resnet18(weights=ResNet18_Weights.DEFAULT)
 
-    extractor = FeatureExtractor(backbone=backbone,
+        extractor = FeatureExtractor(backbone=backbone,
+                                 layers_to_extract_from=['layer2', 'layer3'],
+                                 device=device,
+                                 input_shape=(3, 512, 512))
+    else:
+        backbone = torchvision.models.wide_resnet101_2(weights=Wide_ResNet101_2_Weights.IMAGENET1K_V1)
+
+        extractor = FeatureExtractor(backbone=backbone,
                                  layers_to_extract_from=['layer2', 'layer3'],
                                  device=device,
                                  input_shape=(3, 512, 512))
 
-    if model_size == 'small':
+    if model_size == 'small' or model_size == 'mini':
         pdn = get_pdn_small(out_channels, padding=True)
     elif model_size == 'medium':
         pdn = get_pdn_medium(out_channels, padding=True)
@@ -85,15 +93,16 @@ def main():
 
     pdn.train()
     if on_gpu:
-        pdn = pdn.cuda()
+        # pdn = pdn.cuda()
+        pdn = pdn.to(device)
 
     optimizer = torch.optim.Adam(pdn.parameters(), lr=1e-4, weight_decay=1e-5)
 
     tqdm_obj = tqdm(range(60000))
     for iteration, (image_fe, image_pdn) in zip(tqdm_obj, train_loader):
         if on_gpu:
-            image_fe = image_fe.cuda()
-            image_pdn = image_pdn.cuda()
+            image_fe = image_fe.to(device)
+            image_pdn = image_pdn.to(device)
         target = extractor.embed(image_fe)
         target = (target - channel_mean) / channel_std
         prediction = pdn(image_pdn)
@@ -128,7 +137,7 @@ def feature_normalization(extractor, train_loader, steps=10000):
     with tqdm(desc='Computing mean of features', total=steps) as pbar:
         for image_fe, _ in train_loader:
             if on_gpu:
-                image_fe = image_fe.cuda()
+                image_fe = image_fe.to(device)
             output = extractor.embed(image_fe)
             mean_output = torch.mean(output, dim=[0, 2, 3])
             mean_outputs.append(mean_output)
@@ -146,7 +155,7 @@ def feature_normalization(extractor, train_loader, steps=10000):
     with tqdm(desc='Computing variance of features', total=steps) as pbar:
         for image_fe, _ in train_loader:
             if on_gpu:
-                image_fe = image_fe.cuda()
+                image_fe = image_fe.to(device)
             output = extractor.embed(image_fe)
             distance = (output - channel_mean) ** 2
             mean_distance = torch.mean(distance, dim=[0, 2, 3])
@@ -306,6 +315,8 @@ class MeanMapper(torch.nn.Module):
 
     def forward(self, features):
         features = features.reshape(len(features), 1, -1)
+        # return F.adaptive_avg_pool1d(features.cpu(),
+        #                              self.preprocessing_dim).squeeze(1).to(device)
         return F.adaptive_avg_pool1d(features,
                                      self.preprocessing_dim).squeeze(1)
 
@@ -319,6 +330,7 @@ class Aggregator(torch.nn.Module):
         """Returns reshaped and average pooled features."""
         # batchsize x number_of_layers x input_dim -> batchsize x target_dim
         features = features.reshape(len(features), 1, -1)
+        # features = F.adaptive_avg_pool1d(features.cpu(), self.target_dim).to(device)
         features = F.adaptive_avg_pool1d(features, self.target_dim)
         return features.reshape(len(features), -1)
 
