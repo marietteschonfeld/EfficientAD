@@ -68,7 +68,7 @@ def main():
     config = get_argparse()
     device = torch.device('cuda')
 
-    os.makedirs(config.output_folder)
+    # os.makedirs(config.output_folder)
 
     if model_size == 'mini':
         backbone = torchvision.models.resnet18(weights=ResNet18_Weights.DEFAULT)
