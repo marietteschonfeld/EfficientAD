@@ -34,6 +34,8 @@ seed = 42
 on_gpu = torch.cuda.is_available()
 device = 'cuda' if on_gpu else 'cpu'
 
+print("on gpu?", on_gpu)
+
 # constants
 out_channels = 384
 grayscale_transform = transforms.RandomGrayscale(0.1)  # apply same to both
