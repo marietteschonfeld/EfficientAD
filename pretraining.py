@@ -62,7 +62,7 @@ def main():
     # os.makedirs(config.output_folder)
 
     if model_size == 'mini':
-        backbone = torchvision.models.ResNet18_Weights(
+        backbone = torchvision.models.resnet18(
             weights=ResNet18_Weights.IMAGENET1K_V1)
     else:
         backbone = torchvision.models.wide_resnet101_2(
