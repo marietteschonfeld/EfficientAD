@@ -94,7 +94,6 @@ def main():
     pdn.train()
     if on_gpu:
         pdn = pdn.cuda()
-    print("on cuda?", pdn.device)
     optimizer = torch.optim.Adam(pdn.parameters(), lr=1e-4, weight_decay=1e-5)
 
     tqdm_obj = tqdm(range(60000))
@@ -102,6 +101,8 @@ def main():
         if on_gpu:
             image_fe = image_fe.cuda()
             image_pdn = image_pdn.cuda()
+        print("on cuda?", image_fe.device, image_pdn.device)
+
         target = extractor.embed(image_fe)
         target = (target - channel_mean) / channel_std
         prediction = pdn(image_pdn)
