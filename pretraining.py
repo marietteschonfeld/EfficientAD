@@ -94,7 +94,7 @@ def main():
     pdn.train()
     if on_gpu:
         pdn = pdn.cuda()
-
+    print("on cuda?", pdn.device)
     optimizer = torch.optim.Adam(pdn.parameters(), lr=1e-4, weight_decay=1e-5)
 
     tqdm_obj = tqdm(range(60000))
@@ -137,7 +137,6 @@ def feature_normalization(extractor, train_loader, steps=10000):
         for image_fe, _ in train_loader:
             if on_gpu:
                 image_fe = image_fe.cuda()
-            print("on cuda?", image_fe.device)
             output = extractor.embed(image_fe)
             mean_output = torch.mean(output, dim=[0, 2, 3])
             mean_outputs.append(mean_output)
