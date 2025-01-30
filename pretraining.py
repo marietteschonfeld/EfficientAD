@@ -416,6 +416,9 @@ class LastLayerToExtractReachedException(Exception):
     pass
 
 if __name__ == '__main__':
+    gpu_number = 1
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_number)
     start = time()
     main()
     end = time()
