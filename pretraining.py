@@ -10,10 +10,12 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.models import Wide_ResNet101_2_Weights
+from torchvision.models import Wide_ResNet101_2_Weights, ResNet18_Weights
 from tqdm import tqdm
 from common import (get_pdn_small, get_pdn_medium,
                     ImageFolderWithoutTarget, InfiniteDataloader)
+from time import time
+import csv
 
 
 def get_argparse():
@@ -26,8 +28,8 @@ def get_argparse():
     return parser.parse_args()
 
 # variables
-model_size = 'small'
-imagenet_train_path = './ILSVRC/Data/CLS-LOC/train'
+model_size = 'mini'
+imagenet_train_path = '../imagenette2/train'
 seed = 42
 on_gpu = torch.cuda.is_available()
 device = 'cuda' if on_gpu else 'cpu'
@@ -59,15 +61,19 @@ def main():
 
     os.makedirs(config.output_folder)
 
-    backbone = torchvision.models.wide_resnet101_2(
-        weights=Wide_ResNet101_2_Weights.IMAGENET1K_V1)
+    if model_size == 'mini':
+        backbone = torchvision.models.ResNet18_Weights(
+            weights=ResNet18_Weights.IMAGENET1K_V1)
+    else:
+        backbone = torchvision.models.wide_resnet101_2(
+            weights=Wide_ResNet101_2_Weights.IMAGENET1K_V1)
 
     extractor = FeatureExtractor(backbone=backbone,
                                  layers_to_extract_from=['layer2', 'layer3'],
                                  device=device,
                                  input_shape=(3, 512, 512))
 
-    if model_size == 'small':
+    if model_size == 'small' or model_size == 'mini':
         pdn = get_pdn_small(out_channels, padding=True)
     elif model_size == 'medium':
         pdn = get_pdn_medium(out_channels, padding=True)
@@ -410,4 +416,10 @@ class LastLayerToExtractReachedException(Exception):
     pass
 
 if __name__ == '__main__':
+    start = time()
     main()
+    end = time()
+    line = {'backbone':'resnet18', 'train_time': end-start}
+    with open(f'teacher_train_times', 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=line.keys())
+        writer.writerow(line)
