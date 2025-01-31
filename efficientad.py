@@ -427,7 +427,8 @@ if __name__ == '__main__':
     metric.update(pred_score, torch.Tensor(test_set.targets).int())
     image_AUROC = metric.compute().item()
 
-    line = {'model':'efficientad', 'dataset':config.dataset, 'backbone':'resnet18', 'train_time': end-start, 'subdataset':config.subdataset}
+    line = {'model':'efficientad', 'dataset':config.dataset, 'backbone':'resnet18', 'train_time': train_time, 'test_time': test_time,
+            'subdataset':config.subdataset, 'image_AUROC': image_AUROC, 'pixel_AUPRO': pixel_AUPRO}
     with open(f'student_train_times', 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=line.keys())
         writer.writerow(line)
