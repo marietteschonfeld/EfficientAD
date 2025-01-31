@@ -429,7 +429,7 @@ if __name__ == '__main__':
     pixel_AUPRO = scores['pixel_au_pro']
 
     metric = BinaryAUROC()
-    metric.update(pred_score, torch.Tensor(test_set.targets).int())
+    metric.update(torch.Tensor(pred_score), torch.Tensor(test_set.targets).int())
     image_AUROC = metric.compute().item()
 
     line = {'model':'efficientad', 'dataset':config.dataset, 'backbone':'resnet18', 'train_time': train_time, 'test_time': test_time,
