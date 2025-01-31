@@ -136,7 +136,7 @@ def main():
         penalty_loader_infinite = itertools.repeat(None)
 
     # create models
-    if config.model_size == 'small':
+    if config.model_size == 'small' or config.model_size == 'mini':
         teacher = get_pdn_small(out_channels)
         student = get_pdn_small(2 * out_channels)
     elif config.model_size == 'medium':
@@ -244,8 +244,8 @@ def main():
     student.eval()
     autoencoder.eval()
 
-    torch.save(teacher, os.path.join(train_output_dir, 'teacher_final.pth'))
-    torch.save(student, os.path.join(train_output_dir, 'student_final.pth'))
+    torch.save(teacher, os.path.join(train_output_dir, f'teacher_final.pth'))
+    torch.save(student, os.path.join(train_output_dir, f'student_final.pth'))
     torch.save(autoencoder, os.path.join(train_output_dir,
                                          'autoencoder_final.pth'))
 
