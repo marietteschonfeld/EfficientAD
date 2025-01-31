@@ -46,6 +46,7 @@ def get_argparse():
                         default='./mvtec_loco_anomaly_detection',
                         help='Downloaded Mvtec LOCO dataset')
     parser.add_argument('-t', '--train_steps', type=int, default=70000)
+    parser.add_argument("--gpu_number", default=0)
     return parser.parse_args()
 
 # constants
@@ -75,6 +76,9 @@ def main():
     random.seed(seed)
 
     config = get_argparse()
+
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(config.gpu_number)
 
     if config.dataset == 'mvtec_ad':
         dataset_path = config.mvtec_ad_path
@@ -418,7 +422,7 @@ if __name__ == '__main__':
     if config.dataset == "visa":
         test_set = VisA('../AdversariApple/Data', category=config.subdataset, train=False, pin_memory=False)
 
-    masks = test_set.dataset.masks
+    masks = test_set.masks
     scores = eval.calculate_scores(combined_maps, masks)
     pixel_AUPRO = scores['pixel_au_pro']
 
