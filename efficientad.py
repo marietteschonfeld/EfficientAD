@@ -286,14 +286,13 @@ def main():
         validation_loader=validation_loader, teacher=teacher, student=student,
         autoencoder=autoencoder, teacher_mean=teacher_mean,
         teacher_std=teacher_std, desc='Final map normalization')
-    auc, pred_score, combined_maps = test(
+    pred_score, combined_maps = test(
         test_set=test_set, teacher=teacher, student=student,
         autoencoder=autoencoder, teacher_mean=teacher_mean,
         teacher_std=teacher_std, q_st_start=q_st_start, q_st_end=q_st_end,
         q_ae_start=q_ae_start, q_ae_end=q_ae_end,
         test_output_dir=test_output_dir, desc='Final inference')
     end_test = time()
-    print('Final image auc: {:.4f}'.format(auc))
     train_time = end_train-start_train
     test_time = end_test-start_test
     return config, train_time, test_time, pred_score, combined_maps
