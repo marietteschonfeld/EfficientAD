@@ -11,7 +11,7 @@ import os
 import random
 from tqdm import tqdm
 from common import get_autoencoder, get_pdn_small, get_pdn_medium, \
-    ImageFolderWithoutTarget, ImageFolderWithPath, InfiniteDataloader, visa_without_target, visa_with_path
+    ImageFolderWithoutTarget, ImageFolderWithPath, InfiniteDataloader, visa_with_path, visa_without_target, mvtec_with_path, mvtec_without_target
 from sklearn.metrics import roc_auc_score
 from time import time
 import csv 
@@ -107,12 +107,8 @@ def main():
     # load data
     
     if config.dataset == 'mvtec_ad':
-        full_train_set = ImageFolderWithoutTarget(
-        os.path.join(dataset_path, config.subdataset, 'train'),
-        transform=transforms.Lambda(train_transform))
-        test_set = ImageFolderWithPath(
-        os.path.join(dataset_path, config.subdataset, 'test'))
-        # mvtec dataset paper recommend 10% validation set
+        full_train_set = mvtec_without_target('../AdversariApple/Data', category=config.subdataset, train=True, pin_memory=False)
+        full_train_set.transform = transforms.Lambda(train_transform)
         train_size = int(0.9 * len(full_train_set))
         validation_size = len(full_train_set) - train_size
         rng = torch.Generator().manual_seed(seed)
@@ -120,6 +116,7 @@ def main():
                                                            [train_size,
                                                             validation_size],
                                                            rng)
+        test_set = mvtec_with_path('../AdversariApple/Data', category=config.subdataset, train=False, pin_memory=False)
 
     elif config.dataset == 'visa':
         full_train_set = visa_without_target('../AdversariApple/Data', category=config.subdataset, train=True, pin_memory=False)
@@ -308,6 +305,7 @@ def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
     y_score = []
     combined_maps = []
     for image, target, path in tqdm(test_set, desc=desc):
+        print('image shape', image.shape)
         orig_width = image.width
         orig_height = image.height
         image = default_transform(image)

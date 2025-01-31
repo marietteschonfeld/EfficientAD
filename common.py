@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from torch import nn
 from torchvision.datasets import ImageFolder
+from Dataloaders.MVTecAD_load import *
 from Dataloaders.VisA_Data_Loader import *
 
 def get_autoencoder(out_channels=384):
@@ -105,6 +106,23 @@ class ImageFolderWithoutTarget(ImageFolder):
     def __getitem__(self, index):
         sample, target = super().__getitem__(index)
         return sample
+
+class ImageFolderWithPath(ImageFolder):
+    def __getitem__(self, index):
+        path, target = self.samples[index]
+        sample, target = super().__getitem__(index)
+        return sample, target, path
+    
+class mvtec_without_target(MVTecAD):
+    def __getitem__(self, index):
+        sample, target = super().__getitem__(index)
+        return sample
+    
+class mvtec_with_path(MVTecAD):
+    def __getitem__(self, index):
+        path = self.image_paths[index]
+        sample, target = super().__getitem__(index)
+        return sample, target, path
     
 class visa_without_target(VisA):
     def __getitem__(self, index):
@@ -114,12 +132,6 @@ class visa_without_target(VisA):
 class visa_with_path(VisA):
     def __getitem__(self, index):
         path = self.image_paths[index]
-        sample, target = super().__getitem__(index)
-        return sample, target, path
-
-class ImageFolderWithPath(ImageFolder):
-    def __getitem__(self, index):
-        path, target = self.samples[index]
         sample, target = super().__getitem__(index)
         return sample, target, path
 
