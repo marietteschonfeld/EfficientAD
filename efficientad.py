@@ -430,6 +430,7 @@ if __name__ == '__main__':
     image_AUROC = metric.compute().item()
 
 
+    print(torch.Tensor(pred_score), torch.Tensor(test_set.targets).int())
     filename = f'student_train_times.csv'
     file_exists = os.path.isfile(filename)
 
