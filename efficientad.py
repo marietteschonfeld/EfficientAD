@@ -15,7 +15,7 @@ from common import get_autoencoder, get_pdn_small, get_pdn_medium, \
 from sklearn.metrics import roc_auc_score
 from time import time
 import csv 
-import eval
+from eval import eval
 from Dataloaders.MVTecAD_load import *
 from Dataloaders.VisA_Data_Loader import *
 from torcheval.metrics import BinaryAUROC
