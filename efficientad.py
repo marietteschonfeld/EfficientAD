@@ -13,6 +13,8 @@ from tqdm import tqdm
 from common import get_autoencoder, get_pdn_small, get_pdn_medium, \
     ImageFolderWithoutTarget, ImageFolderWithPath, InfiniteDataloader
 from sklearn.metrics import roc_auc_score
+from time import time
+import csv 
 
 def get_argparse():
     parser = argparse.ArgumentParser()
@@ -23,8 +25,8 @@ def get_argparse():
                              'sub-datasets of Mvtec LOCO')
     parser.add_argument('-o', '--output_dir', default='output/1')
     parser.add_argument('-m', '--model_size', default='small',
-                        choices=['small', 'medium'])
-    parser.add_argument('-w', '--weights', default='models/teacher_small.pth')
+                        choices=['mini', 'small', 'medium'])
+    parser.add_argument('-w', '--weights', default='models/teacher_mini.pth')
     parser.add_argument('-i', '--imagenet_train_path',
                         default='none',
                         help='Set to "none" to disable ImageNet' +
@@ -258,6 +260,7 @@ def main():
         q_ae_start=q_ae_start, q_ae_end=q_ae_end,
         test_output_dir=test_output_dir, desc='Final inference')
     print('Final image auc: {:.4f}'.format(auc))
+    return config
 
 def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
          q_st_start, q_st_end, q_ae_start, q_ae_end, test_output_dir=None,
@@ -366,4 +369,17 @@ def teacher_normalization(teacher, train_loader):
     return channel_mean, channel_std
 
 if __name__ == '__main__':
-    main()
+    # command python efficientad.py --dataset mvtec_ad --subdataset bottle --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --mvtec_ad_path ../AdversariApple/Data/mvtec_anomaly_detection
+    start = time()
+    config=main()
+    end = time()
+    subdataset='bottle'
+    line = {'backbone':'resnet18', 'train_time': end-start, 'subdataset':subdataset}
+    with open(f'student_train_times', 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=line.keys())
+        writer.writerow(line)
+
+    line = {'backbone':'resnet18', 'train_time': end-start, 'subdataset':config.subdataset}
+    with open(f'student_train_times', 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=line.keys())
+        writer.writerow(line)
