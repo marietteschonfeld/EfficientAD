@@ -305,9 +305,8 @@ def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
     y_score = []
     combined_maps = []
     for image, target, path in tqdm(test_set, desc=desc):
-        print('image shape', image.shape)
-        orig_width = image.width
-        orig_height = image.height
+        orig_width = image.shape[-1]
+        orig_height = image.shape[-2]
         image = default_transform(image)
         image = image[None]
         if on_gpu:
