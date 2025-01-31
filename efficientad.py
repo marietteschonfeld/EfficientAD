@@ -384,15 +384,16 @@ def teacher_normalization(teacher, train_loader):
 
 if __name__ == '__main__':
     # command python efficientad.py --dataset mvtec_ad --subdataset bottle --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --mvtec_ad_path ../AdversariApple/Data/mvtec_anomaly_detection
+    # command python efficientad.py --dataset visa --subdataset cashew --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --visa_path ../AdversariApple/Data/VisA_20220922
     start = time()
     config, pred_score, combined_maps = main()
     end = time()
 
     if config.dataset == "mvtec_ad":
-        test_set = MVTecAD('Data', category=config.subdataset, train=False, pin_memory=False)
+        test_set = MVTecAD('../AdversariApple/Data', category=config.subdataset, train=False, pin_memory=False)
 
     if config.dataset == "visa":
-        test_set = VisA('Data', category=config.subdataset, train=False, pin_memory=False)
+        test_set = VisA('../AdversariApple/Data', category=config.subdataset, train=False, pin_memory=False)
 
     masks = test_set.dataset.masks
     scores = eval.calculate_scores(combined_maps, masks)
