@@ -10,9 +10,9 @@ import numpy as np
 import os, json
 from torcheval.metrics import BinaryAUROC
 
-from .mvtec_ad_evaluation.pro_curve_util import compute_pro
-from .mvtec_ad_evaluation.roc_curve_util import compute_classification_roc
-from .mvtec_ad_evaluation.generic_util import trapezoid
+from mvtec_ad_evaluation.pro_curve_util import compute_pro
+from mvtec_ad_evaluation.roc_curve_util import compute_classification_roc
+from mvtec_ad_evaluation.generic_util import trapezoid
 from scipy.ndimage.measurements import label
 
 # from kornia.contrib import connected_components
