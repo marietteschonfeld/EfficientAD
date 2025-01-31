@@ -11,7 +11,7 @@ import os
 import random
 from tqdm import tqdm
 from common import get_autoencoder, get_pdn_small, get_pdn_medium, \
-    ImageFolderWithoutTarget, ImageFolderWithPath, InfiniteDataloader
+    ImageFolderWithoutTarget, ImageFolderWithPath, InfiniteDataloader, visa_without_target, visa_with_path
 from sklearn.metrics import roc_auc_score
 from time import time
 import csv 
@@ -101,12 +101,13 @@ def main():
         os.makedirs(test_output_dir)
 
     # load data
-    full_train_set = ImageFolderWithoutTarget(
+    
+    if config.dataset == 'mvtec_ad':
+        full_train_set = ImageFolderWithoutTarget(
         os.path.join(dataset_path, config.subdataset, 'train'),
         transform=transforms.Lambda(train_transform))
-    test_set = ImageFolderWithPath(
+        test_set = ImageFolderWithPath(
         os.path.join(dataset_path, config.subdataset, 'test'))
-    if config.dataset == 'mvtec_ad' or config.dataset == 'visa':
         # mvtec dataset paper recommend 10% validation set
         train_size = int(0.9 * len(full_train_set))
         validation_size = len(full_train_set) - train_size
@@ -115,6 +116,21 @@ def main():
                                                            [train_size,
                                                             validation_size],
                                                            rng)
+
+    elif config.dataset == 'visa':
+        full_train_set = visa_without_target('../AdversariApple/Data', category=config.subdataset, train=True, pin_memory=False)
+        full_train_set.transform = transforms.Lambda(train_transform)
+        train_size = int(0.9 * len(full_train_set))
+        validation_size = len(full_train_set) - train_size
+        rng = torch.Generator().manual_seed(seed)
+        train_set, validation_set = torch.utils.data.random_split(full_train_set,
+                                                           [train_size,
+                                                            validation_size],
+                                                           rng)
+        test_set = visa_with_path('../AdversariApple/Data', category=config.subdataset, train=False, pin_memory=False)
+    
+   
+    
     elif config.dataset == 'mvtec_loco':
         train_set = full_train_set
         validation_set = ImageFolderWithoutTarget(

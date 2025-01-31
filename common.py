@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from torch import nn
 from torchvision.datasets import ImageFolder
+from Dataloaders.VisA_Data_Loader import *
 
 def get_autoencoder(out_channels=384):
     return nn.Sequential(
@@ -104,6 +105,17 @@ class ImageFolderWithoutTarget(ImageFolder):
     def __getitem__(self, index):
         sample, target = super().__getitem__(index)
         return sample
+    
+class visa_without_target(VisA):
+    def __getitem__(self, index):
+        sample, target = super().__getitem__(index)
+        return sample
+    
+class visa_with_path(VisA):
+    def __getitem__(self, index):
+        path = self.image_paths[index]
+        sample, target = super().__getitem__(index)
+        return sample, target, path
 
 class ImageFolderWithPath(ImageFolder):
     def __getitem__(self, index):
