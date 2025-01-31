@@ -421,7 +421,6 @@ if __name__ == '__main__':
 
     masks = test_set.masks
     combined_maps = torch.stack(combined_maps, dim=0).unsqueeze(1)
-    print("map dimensions", combined_maps.shape)
     scores = eval.calculate_scores(combined_maps, masks)
     pixel_AUPRO = scores['pixel_au_pro']
 
@@ -429,8 +428,6 @@ if __name__ == '__main__':
     metric.update(torch.Tensor(pred_score), torch.Tensor(test_set.targets).int())
     image_AUROC = metric.compute().item()
 
-
-    print(torch.Tensor(pred_score), torch.Tensor(test_set.targets).int())
     filename = f'student_train_times.csv'
     file_exists = os.path.isfile(filename)
 
