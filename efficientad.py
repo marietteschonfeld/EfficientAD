@@ -322,7 +322,7 @@ def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
         map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
         map_combined = torch.nn.functional.interpolate(
             map_combined, (orig_height, orig_width), mode='bilinear')
-        map_combined = map_combined[0, 0].cpu().numpy()
+        map_combined = map_combined[0, 0]
 
         # defect_class = os.path.basename(os.path.dirname(path))
         # if test_output_dir is not None:
