@@ -428,7 +428,7 @@ if __name__ == '__main__':
     metric.update(torch.Tensor(pred_score), torch.Tensor(test_set.targets).int())
     image_AUROC = metric.compute().item()
 
-    filename = f'student_train_times.csv'
+    filename = f'benchmark.csv'
     file_exists = os.path.isfile(filename)
 
     line = {'model':'efficientad', 'dataset':config.dataset, 'backbone':'resnet18', 'train_time': train_time, 'test_time': test_time,
