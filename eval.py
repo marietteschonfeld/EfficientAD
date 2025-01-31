@@ -63,7 +63,7 @@ class eval():
 
     @staticmethod
     def prepare_maps(anomaly_maps, gt_maps):
-        anomaly_maps = [transforms.functional.resize(anomaly_map, size=gt_maps[ind].shape[-2:]) for ind, anomaly_map in enumerate(anomaly_maps)]
+        anomaly_maps = [transforms.functional.resize(torch.from_numpy(anomaly_map), size=gt_maps[ind].shape[-2:]) for ind, anomaly_map in enumerate(anomaly_maps)]
         anomaly_maps = [anomaly_map.squeeze().numpy() for anomaly_map in anomaly_maps]
         gt_maps = [gt_map.squeeze().numpy() for gt_map in gt_maps]
         return anomaly_maps, gt_maps
