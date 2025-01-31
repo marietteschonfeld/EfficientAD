@@ -270,7 +270,7 @@ def main():
         #     student.train()
         #     autoencoder.train()
 
-    end_train = time.time()
+    end_train = time()
 
     teacher.eval()
     student.eval()
