@@ -423,6 +423,8 @@ if __name__ == '__main__':
         test_set = VisA('../AdversariApple/Data', category=config.subdataset, train=False, pin_memory=False)
 
     masks = test_set.masks
+    combined_maps = torch.cat(combined_maps, dim=0).unsqueeze(1)
+    print("map dimensions", combined_maps.shape)
     scores = eval.calculate_scores(combined_maps, masks)
     pixel_AUPRO = scores['pixel_au_pro']
 
