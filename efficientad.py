@@ -333,7 +333,7 @@ def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
         #     tifffile.imwrite(file, map_combined)
         combined_maps.append(map_combined)
         # y_true_image = 0 if defect_class == 'good' or defect_class == 'Normal' else 1
-        y_score_image = np.max(map_combined)
+        y_score_image = torch.max(map_combined)
         # y_true.append(y_true_image)
         y_score.append(y_score_image)
     
