@@ -176,6 +176,8 @@ def main():
     teacher.load_state_dict(state_dict)
     autoencoder = get_autoencoder(out_channels)
 
+    start_train = time()
+
     # teacher frozen
     teacher.eval()
     student.train()
@@ -236,37 +238,39 @@ def main():
             tqdm_obj.set_description(
                 "Current loss: {:.4f}  ".format(loss_total.item()))
 
-        if iteration % 1000 == 0:
-            torch.save(teacher, os.path.join(train_output_dir,
-                                             'teacher_tmp.pth'))
-            torch.save(student, os.path.join(train_output_dir,
-                                             'student_tmp.pth'))
-            torch.save(autoencoder, os.path.join(train_output_dir,
-                                                 'autoencoder_tmp.pth'))
+        # if iteration % 1000 == 0:
+        #     torch.save(teacher, os.path.join(train_output_dir,
+        #                                      'teacher_tmp.pth'))
+        #     torch.save(student, os.path.join(train_output_dir,
+        #                                      'student_tmp.pth'))
+        #     torch.save(autoencoder, os.path.join(train_output_dir,
+        #                                          'autoencoder_tmp.pth'))
 
-        if iteration % 10000 == 0 and iteration > 0:
-            # run intermediate evaluation
-            teacher.eval()
-            student.eval()
-            autoencoder.eval()
+        # if iteration % 10000 == 0 and iteration > 0:
+        #     # run intermediate evaluation
+        #     teacher.eval()
+        #     student.eval()
+        #     autoencoder.eval()
 
-            q_st_start, q_st_end, q_ae_start, q_ae_end = map_normalization(
-                validation_loader=validation_loader, teacher=teacher,
-                student=student, autoencoder=autoencoder,
-                teacher_mean=teacher_mean, teacher_std=teacher_std,
-                desc='Intermediate map normalization')
-            auc,_ = test(
-                test_set=test_set, teacher=teacher, student=student,
-                autoencoder=autoencoder, teacher_mean=teacher_mean,
-                teacher_std=teacher_std, q_st_start=q_st_start,
-                q_st_end=q_st_end, q_ae_start=q_ae_start, q_ae_end=q_ae_end,
-                test_output_dir=None, desc='Intermediate inference')
-            print('Intermediate image auc: {:.4f}'.format(auc))
+        #     q_st_start, q_st_end, q_ae_start, q_ae_end = map_normalization(
+        #         validation_loader=validation_loader, teacher=teacher,
+        #         student=student, autoencoder=autoencoder,
+        #         teacher_mean=teacher_mean, teacher_std=teacher_std,
+        #         desc='Intermediate map normalization')
+        #     auc,_ = test(
+        #         test_set=test_set, teacher=teacher, student=student,
+        #         autoencoder=autoencoder, teacher_mean=teacher_mean,
+        #         teacher_std=teacher_std, q_st_start=q_st_start,
+        #         q_st_end=q_st_end, q_ae_start=q_ae_start, q_ae_end=q_ae_end,
+        #         test_output_dir=None, desc='Intermediate inference')
+        #     print('Intermediate image auc: {:.4f}'.format(auc))
 
-            # teacher frozen
-            teacher.eval()
-            student.train()
-            autoencoder.train()
+        #     # teacher frozen
+        #     teacher.eval()
+        #     student.train()
+        #     autoencoder.train()
+
+    end_train = time.time()
 
     teacher.eval()
     student.eval()
@@ -277,6 +281,7 @@ def main():
     torch.save(autoencoder, os.path.join(train_output_dir,
                                          'autoencoder_final.pth'))
 
+    start_test = time()
     q_st_start, q_st_end, q_ae_start, q_ae_end = map_normalization(
         validation_loader=validation_loader, teacher=teacher, student=student,
         autoencoder=autoencoder, teacher_mean=teacher_mean,
@@ -287,8 +292,11 @@ def main():
         teacher_std=teacher_std, q_st_start=q_st_start, q_st_end=q_st_end,
         q_ae_start=q_ae_start, q_ae_end=q_ae_end,
         test_output_dir=test_output_dir, desc='Final inference')
+    end_test = time()
     print('Final image auc: {:.4f}'.format(auc))
-    return config, pred_score, combined_maps
+    train_time = end_train-start_train
+    test_time = end_test-start_test
+    return config, train_time, test_time, pred_score, combined_maps
 
 def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
          q_st_start, q_st_end, q_ae_start, q_ae_end, test_output_dir=None,
@@ -313,21 +321,21 @@ def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
             map_combined, (orig_height, orig_width), mode='bilinear')
         map_combined = map_combined[0, 0].cpu().numpy()
 
-        defect_class = os.path.basename(os.path.dirname(path))
-        if test_output_dir is not None:
-            img_nm = os.path.split(path)[1].split('.')[0]
-            if not os.path.exists(os.path.join(test_output_dir, defect_class)):
-                os.makedirs(os.path.join(test_output_dir, defect_class))
-            file = os.path.join(test_output_dir, defect_class, img_nm + '.tiff')
-            tifffile.imwrite(file, map_combined)
+        # defect_class = os.path.basename(os.path.dirname(path))
+        # if test_output_dir is not None:
+        #     img_nm = os.path.split(path)[1].split('.')[0]
+        #     if not os.path.exists(os.path.join(test_output_dir, defect_class)):
+        #         os.makedirs(os.path.join(test_output_dir, defect_class))
+        #     file = os.path.join(test_output_dir, defect_class, img_nm + '.tiff')
+        #     tifffile.imwrite(file, map_combined)
         combined_maps.append(map_combined)
-        y_true_image = 0 if defect_class == 'good' else 1
+        # y_true_image = 0 if defect_class == 'good' or defect_class == 'Normal' else 1
         y_score_image = np.max(map_combined)
-        y_true.append(y_true_image)
+        # y_true.append(y_true_image)
         y_score.append(y_score_image)
     
-    auc = roc_auc_score(y_true=y_true, y_score=y_score)
-    return auc * 100, y_score, combined_maps
+    # auc = roc_auc_score(y_true=y_true, y_score=y_score)
+    return y_score, combined_maps
 
 @torch.no_grad()
 def predict(image, teacher, student, autoencoder, teacher_mean, teacher_std,
@@ -402,7 +410,7 @@ if __name__ == '__main__':
     # command python efficientad.py --dataset mvtec_ad --subdataset bottle --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --mvtec_ad_path ../AdversariApple/Data/mvtec_anomaly_detection
     # command python efficientad.py --dataset visa --subdataset cashew --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --visa_path ../AdversariApple/Data/VisA_20220922
     start = time()
-    config, pred_score, combined_maps = main()
+    config, train_time, test_time, pred_score, combined_maps = main()
     end = time()
 
     if config.dataset == "mvtec_ad":
@@ -419,7 +427,7 @@ if __name__ == '__main__':
     metric.update(pred_score, torch.Tensor(test_set.targets).int())
     image_AUROC = metric.compute().item()
 
-    line = {'backbone':'resnet18', 'train_time': end-start, 'subdataset':config.subdataset}
+    line = {'model':'efficientad', 'dataset':config.dataset, 'backbone':'resnet18', 'train_time': end-start, 'subdataset':config.subdataset}
     with open(f'student_train_times', 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=line.keys())
         writer.writerow(line)
