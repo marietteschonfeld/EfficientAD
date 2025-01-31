@@ -85,7 +85,7 @@ def main():
     elif config.dataset == 'mvtec_loco':
         dataset_path = config.mvtec_loco_path
     elif config.dataset == 'visa':
-        dataset_path = config.visa
+        dataset_path = config.visa_path
     else:
         raise Exception('Unknown config.dataset')
 
@@ -432,8 +432,14 @@ if __name__ == '__main__':
     metric.update(torch.Tensor(pred_score), torch.Tensor(test_set.targets).int())
     image_AUROC = metric.compute().item()
 
+
+    filename = f'student_train_times.csv'
+    file_exists = os.path.isfile(filename)
+
     line = {'model':'efficientad', 'dataset':config.dataset, 'backbone':'resnet18', 'train_time': train_time, 'test_time': test_time,
             'subdataset':config.subdataset, 'image_AUROC': image_AUROC, 'pixel_AUPRO': pixel_AUPRO}
-    with open(f'student_train_times', 'a', newline='') as csvfile:
+    with open(filename, 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=line.keys())
+        if not file_exists:
+            writer.writeheader()  # file doesn't exist yet, write a header
         writer.writerow(line)
