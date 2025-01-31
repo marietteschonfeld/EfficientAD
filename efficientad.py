@@ -15,11 +15,15 @@ from common import get_autoencoder, get_pdn_small, get_pdn_medium, \
 from sklearn.metrics import roc_auc_score
 from time import time
 import csv 
+import eval
+from Dataloaders.MVTecAD_load import *
+from Dataloaders.VisA_Data_Loader import *
+from torcheval.metrics import BinaryAUROC
 
 def get_argparse():
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dataset', default='mvtec_ad',
-                        choices=['mvtec_ad', 'mvtec_loco'])
+                        choices=['mvtec_ad', 'visa', 'mvtec_loco'])
     parser.add_argument('-s', '--subdataset', default='bottle',
                         help='One of 15 sub-datasets of Mvtec AD or 5' +
                              'sub-datasets of Mvtec LOCO')
@@ -35,6 +39,9 @@ def get_argparse():
     parser.add_argument('-a', '--mvtec_ad_path',
                         default='./mvtec_anomaly_detection',
                         help='Downloaded Mvtec AD dataset')
+    parser.add_argument('-c', '--visa_path',
+                        default='./visa',
+                        help='Downloaded Visa dataset')
     parser.add_argument('-b', '--mvtec_loco_path',
                         default='./mvtec_loco_anomaly_detection',
                         help='Downloaded Mvtec LOCO dataset')
@@ -73,6 +80,8 @@ def main():
         dataset_path = config.mvtec_ad_path
     elif config.dataset == 'mvtec_loco':
         dataset_path = config.mvtec_loco_path
+    elif config.dataset == 'visa':
+        dataset_path = config.visa
     else:
         raise Exception('Unknown config.dataset')
 
@@ -97,7 +106,7 @@ def main():
         transform=transforms.Lambda(train_transform))
     test_set = ImageFolderWithPath(
         os.path.join(dataset_path, config.subdataset, 'test'))
-    if config.dataset == 'mvtec_ad':
+    if config.dataset == 'mvtec_ad' or config.dataset == 'visa':
         # mvtec dataset paper recommend 10% validation set
         train_size = int(0.9 * len(full_train_set))
         validation_size = len(full_train_set) - train_size
@@ -230,7 +239,7 @@ def main():
                 student=student, autoencoder=autoencoder,
                 teacher_mean=teacher_mean, teacher_std=teacher_std,
                 desc='Intermediate map normalization')
-            auc = test(
+            auc,_ = test(
                 test_set=test_set, teacher=teacher, student=student,
                 autoencoder=autoencoder, teacher_mean=teacher_mean,
                 teacher_std=teacher_std, q_st_start=q_st_start,
@@ -256,20 +265,21 @@ def main():
         validation_loader=validation_loader, teacher=teacher, student=student,
         autoencoder=autoencoder, teacher_mean=teacher_mean,
         teacher_std=teacher_std, desc='Final map normalization')
-    auc = test(
+    auc, pred_score, combined_maps = test(
         test_set=test_set, teacher=teacher, student=student,
         autoencoder=autoencoder, teacher_mean=teacher_mean,
         teacher_std=teacher_std, q_st_start=q_st_start, q_st_end=q_st_end,
         q_ae_start=q_ae_start, q_ae_end=q_ae_end,
         test_output_dir=test_output_dir, desc='Final inference')
     print('Final image auc: {:.4f}'.format(auc))
-    return config
+    return config, pred_score, combined_maps
 
 def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
          q_st_start, q_st_end, q_ae_start, q_ae_end, test_output_dir=None,
          desc='Running inference'):
     y_true = []
     y_score = []
+    combined_maps = []
     for image, target, path in tqdm(test_set, desc=desc):
         orig_width = image.width
         orig_height = image.height
@@ -294,13 +304,14 @@ def test(test_set, teacher, student, autoencoder, teacher_mean, teacher_std,
                 os.makedirs(os.path.join(test_output_dir, defect_class))
             file = os.path.join(test_output_dir, defect_class, img_nm + '.tiff')
             tifffile.imwrite(file, map_combined)
-
+        combined_maps.append(map_combined)
         y_true_image = 0 if defect_class == 'good' else 1
         y_score_image = np.max(map_combined)
         y_true.append(y_true_image)
         y_score.append(y_score_image)
+    
     auc = roc_auc_score(y_true=y_true, y_score=y_score)
-    return auc * 100
+    return auc * 100, y_score, combined_maps
 
 @torch.no_grad()
 def predict(image, teacher, student, autoencoder, teacher_mean, teacher_std,
@@ -374,13 +385,22 @@ def teacher_normalization(teacher, train_loader):
 if __name__ == '__main__':
     # command python efficientad.py --dataset mvtec_ad --subdataset bottle --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --mvtec_ad_path ../AdversariApple/Data/mvtec_anomaly_detection
     start = time()
-    config=main()
+    config, pred_score, combined_maps = main()
     end = time()
-    subdataset='bottle'
-    line = {'backbone':'resnet18', 'train_time': end-start, 'subdataset':subdataset}
-    with open(f'student_train_times', 'a', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=line.keys())
-        writer.writerow(line)
+
+    if config.dataset == "mvtec_ad":
+        test_set = MVTecAD('Data', category=config.subdataset, train=False, pin_memory=False)
+
+    if config.dataset == "visa":
+        test_set = VisA('Data', category=config.subdataset, train=False, pin_memory=False)
+
+    masks = test_set.dataset.masks
+    scores = eval.calculate_scores(combined_maps, masks)
+    pixel_AUPRO = scores['pixel_au_pro']
+
+    metric = BinaryAUROC()
+    metric.update(pred_score, torch.Tensor(test_set.targets).int())
+    image_AUROC = metric.compute().item()
 
     line = {'backbone':'resnet18', 'train_time': end-start, 'subdataset':config.subdataset}
     with open(f'student_train_times', 'a', newline='') as csvfile:
