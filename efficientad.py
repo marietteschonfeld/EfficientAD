@@ -179,12 +179,12 @@ def main():
     autoencoder = get_autoencoder(out_channels)
 
     if config.load_model:
-        teacher_state_dict = torch.load(f'output/1/trainings/{config.dataset}/{config.subdataset}/teacher_final.pth', map_location='cpu')
-        student_state_dict = torch.load(f'output/1/trainings/{config.dataset}/{config.subdataset}/student_final.pth', map_location='cpu')
-        autoencoder_state_dict = torch.load(f'output/1/trainings/{config.dataset}/{config.subdataset}/autoencoder_final.pth', map_location='cpu')
-        teacher.load_state_dict(teacher_state_dict)
-        student.load_state_dict(student_state_dict)
-        autoencoder.load_state_dict(autoencoder_state_dict)
+        teacher = torch.load(f'output/1/trainings/{config.dataset}/{config.subdataset}/teacher_final.pth')
+        student = torch.load(f'output/1/trainings/{config.dataset}/{config.subdataset}/student_final.pth')
+        autoencoder = torch.load(f'output/1/trainings/{config.dataset}/{config.subdataset}/autoencoder_final.pth')
+        # teacher.load_state_dict(teacher_state_dict)
+        # student.load_state_dict(student_state_dict)
+        # autoencoder.load_state_dict(autoencoder_state_dict)
     else:
         state_dict = torch.load(config.weights, map_location='cpu')
         teacher.load_state_dict(state_dict)
