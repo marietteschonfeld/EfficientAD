@@ -3,7 +3,7 @@ visa_categories=('candle' 'capsules' 'cashew' 'chewinggum' 'fryum' 'macaroni1' '
 
 write_scores='no_training.csv'
 gpu_type='cuda'
-gpu_number=1
+gpu_number=0
 
 for category in "${mvtec_ad_categories[@]}"; do
     command python efficientad.py --train_steps 0 --load_model True --dataset mvtec_ad --subdataset "$category" --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --mvtec_ad_path ../AdversariApple/Data/mvtec_anomaly_detection
