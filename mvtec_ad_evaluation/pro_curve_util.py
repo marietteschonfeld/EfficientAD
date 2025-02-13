@@ -6,7 +6,6 @@ The PRO curve can also be integrated up to a constant integration limit.
 import numpy as np
 from scipy.ndimage.measurements import label
 
-
 def compute_pro(anomaly_maps, ground_truth_maps):
     """Compute the PRO curve for a set of anomaly maps with corresponding ground
     truth maps.
@@ -25,7 +24,7 @@ def compute_pro(anomaly_maps, ground_truth_maps):
         pros: numpy array of corresponding PRO values.
     """
 
-    print("Compute PRO curve...")
+    # print("Compute PRO curve...")
 
     # Structuring element for computing connected components.
     structure = np.ones((3, 3), dtype=int)
@@ -33,14 +32,9 @@ def compute_pro(anomaly_maps, ground_truth_maps):
     num_ok_pixels = 0
     num_gt_regions = 0
 
-    shape = (len(anomaly_maps),
-             anomaly_maps[0].shape[0],
-             anomaly_maps[0].shape[1])
-    fp_changes = np.zeros(shape, dtype=np.uint32)
-    assert shape[0] * shape[1] * shape[2] < np.iinfo(fp_changes.dtype).max, \
-        'Potential overflow when using np.cumsum(), consider using np.uint64.'
 
-    pro_changes = np.zeros(shape, dtype=np.float64)
+    fp_changes = []
+    pro_changes = []
 
     for gt_ind, gt_map in enumerate(ground_truth_maps):
 
@@ -58,7 +52,7 @@ def compute_pro(anomaly_maps, ground_truth_maps):
         # fp_change needs to be normalized later when we know the final value
         # of num_ok_pixels -> right now it is only the change in the number of
         # false positives
-        fp_change = np.zeros_like(gt_map, dtype=fp_changes.dtype)
+        fp_change = np.zeros_like(gt_map, dtype=np.float64)
         fp_change[ok_mask] = 1
 
         # Compute by how much the PRO changes when each anomaly score is
@@ -71,16 +65,16 @@ def compute_pro(anomaly_maps, ground_truth_maps):
             region_size = np.sum(region_mask)
             pro_change[region_mask] = 1. / region_size
 
-        fp_changes[gt_ind, :, :] = fp_change
-        pro_changes[gt_ind, :, :] = pro_change
+        fp_changes.append(fp_change)
+        pro_changes.append(pro_change)
 
     # Flatten the numpy arrays before sorting.
-    anomaly_scores_flat = np.array(anomaly_maps).ravel()
-    fp_changes_flat = fp_changes.ravel()
-    pro_changes_flat = pro_changes.ravel()
+    anomaly_scores_flat = np.concatenate([anomaly_map.ravel() for anomaly_map in anomaly_maps])
+    fp_changes_flat = np.concatenate([fp_change.ravel() for fp_change in fp_changes])
+    pro_changes_flat = np.concatenate([pro_change.ravel() for pro_change in pro_changes])
 
     # Sort all anomaly scores.
-    print(f"Sort {len(anomaly_scores_flat)} anomaly scores...")
+    # print(f"Sort {len(anomaly_scores_flat)} anomaly scores...")
     sort_idxs = np.argsort(anomaly_scores_flat).astype(np.uint32)[::-1]
 
     # Info: np.take(a, ind, out=a) followed by b=a instead of
@@ -129,6 +123,7 @@ def compute_pro(anomaly_maps, ground_truth_maps):
     one = np.array([1.])
 
     return np.concatenate((zero, fprs, one)), np.concatenate((zero, pros, one))
+
 
 
 def main():
