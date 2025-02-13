@@ -13,6 +13,9 @@ from torchvision.tv_tensors import Mask
 def _convert_label(x):
     return 0 if x == 0 else 1
 
+def identity(x):
+    return x
+
 class AD_Dataset(VisionDataset, ABC):
 
     datasets = {'mvtec_ad':'mvtec_anomaly_detection', 
@@ -89,11 +92,7 @@ class AD_Dataset(VisionDataset, ABC):
 
         self.image_paths, self.mask_paths, self.targets = self._find_paths()
         self.targets = [self.target_transform(i) for i in self.targets]
-        if self.dataset_name != "mvtec_loco":
-            if self.train:
-                self.masks = []
-            else:
-                self.masks = [self.mask_transform(self._load_image(path, mask=True)) for path in self.mask_paths]
+        
 
         if not os.path.exists(self.subset_root):
             raise FileNotFoundError('subset {} is not found, please set download=True to download it.')
@@ -115,7 +114,7 @@ class AD_Dataset(VisionDataset, ABC):
         else:
             transform = [transforms.Resize(size=(self.image_height, self.image_height))]
 
-        mask_transform = [transforms.Resize(size=self.image_height)]
+        mask_transform = [transforms.Lambda(identity)]
 
         if self.crop:
             short_size = min(self.image_size)
@@ -150,6 +149,12 @@ class AD_Dataset(VisionDataset, ABC):
             target = self.target_transform(target)
 
         return image, target
+    
+    def get_masks(self):
+        if self.train:
+            return []
+        else:
+            return [self.mask_transform(self._load_image(path, mask=True)) for path in self.mask_paths]
 
 
     def __len__(self):

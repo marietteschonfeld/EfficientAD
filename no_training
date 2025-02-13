@@ -1,0 +1,14 @@
+mvtec_ad_categories=('bottle' 'cable' 'capsule' 'carpet' 'grid' 'hazelnut' 'leather' 'metal_nut' 'pill' 'screw' 'tile' 'toothbrush' 'transistor' 'wood' 'zipper')
+visa_categories=('candle' 'capsules' 'cashew' 'chewinggum' 'fryum' 'macaroni1' 'macaroni2' 'pcb1' 'pcb2' 'pcb3' 'pcb4' 'pipe_fryum')
+
+write_scores='no_training.csv'
+gpu_type='cuda'
+gpu_number=1
+
+for category in "${mvtec_ad_categories[@]}"; do
+    command python efficientad.py --train_steps 0 --load_model True --dataset mvtec_ad --subdataset "$category" --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --mvtec_ad_path ../AdversariApple/Data/mvtec_anomaly_detection
+done
+
+for category in "${visa_categories[@]}"; do
+    command python efficientad.py --train_steps 0 --load_model True --dataset visa --subdataset "$category" --model_size mini --weights 'output/pretraining/1/teacher_mini_final_state.pth' --imagenet_train_path '../imagenette2/train' --visa_path ../AdversariApple/Data/VisA_20220922
+done

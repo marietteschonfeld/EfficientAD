@@ -31,6 +31,7 @@ def get_argparse():
     parser.add_argument('-m', '--model_size', default='small',
                         choices=['mini', 'small', 'medium'])
     parser.add_argument('-w', '--weights', default='models/teacher_mini.pth')
+    parser.add_argument('-l', '--load_model', default=False)
     parser.add_argument('-i', '--imagenet_train_path',
                         default='none',
                         help='Set to "none" to disable ImageNet' +
@@ -45,6 +46,8 @@ def get_argparse():
     parser.add_argument('-b', '--mvtec_loco_path',
                         default='./mvtec_loco_anomaly_detection',
                         help='Downloaded Mvtec LOCO dataset')
+    
+
     parser.add_argument('-t', '--train_steps', type=int, default=70000)
     parser.add_argument("--gpu_number", default=0)
     return parser.parse_args()
@@ -173,9 +176,20 @@ def main():
         student = get_pdn_medium(2 * out_channels)
     else:
         raise Exception()
-    state_dict = torch.load(config.weights, map_location='cpu')
-    teacher.load_state_dict(state_dict)
     autoencoder = get_autoencoder(out_channels)
+
+    if config.load_model:
+        teacher_state_dict = torch.load(f'output/pretraining/1/trainings/{config.dataset}/{config.subdataset}/teacher_final.pth', map_location='cpu')
+        student_state_dict = torch.load(f'output/pretraining/1/trainings/{config.dataset}/{config.subdataset}/student_final.pth', map_location='cpu')
+        autoencoder_state_dict = torch.load(f'output/pretraining/1/trainings/{config.dataset}/{config.subdataset}/autoencoder_final.pth', map_location='cpu')
+        teacher.load_state_dict(teacher_state_dict)
+        student.load_state_dict(student_state_dict)
+        autoencoder.load_state_dict(autoencoder_state_dict)
+    else:
+        state_dict = torch.load(config.weights, map_location='cpu')
+        teacher.load_state_dict(state_dict)
+
+
 
     start_train = time()
 
@@ -276,11 +290,11 @@ def main():
     teacher.eval()
     student.eval()
     autoencoder.eval()
-
-    torch.save(teacher, os.path.join(train_output_dir, f'teacher_final.pth'))
-    torch.save(student, os.path.join(train_output_dir, f'student_final.pth'))
-    torch.save(autoencoder, os.path.join(train_output_dir,
-                                         'autoencoder_final.pth'))
+    if not config.load_model:
+        torch.save(teacher, os.path.join(train_output_dir, f'teacher_final.pth'))
+        torch.save(student, os.path.join(train_output_dir, f'student_final.pth'))
+        torch.save(autoencoder, os.path.join(train_output_dir,
+                                            'autoencoder_final.pth'))
 
     start_test = time()
     q_st_start, q_st_end, q_ae_start, q_ae_end = map_normalization(
@@ -419,7 +433,7 @@ if __name__ == '__main__':
     if config.dataset == "visa":
         test_set = VisA('../AdversariApple/Data', category=config.subdataset, train=False, pin_memory=False)
 
-    masks = test_set.masks
+    masks = test_set.get_masks()
     combined_maps = torch.stack(combined_maps, dim=0).unsqueeze(1)
     scores = eval.calculate_scores(combined_maps, masks)
     pixel_AUPRO = scores['pixel_au_pro']
